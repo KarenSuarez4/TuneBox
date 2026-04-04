@@ -269,11 +269,21 @@ Al finalizar la simulación se imprime el log completo con totales de intentos p
 git clone https://github.com/KarenSuarez4/TuneBox.git
 cd TuneBox
 
-# Ejecutar la simulación
+# Ejecutar la herramienta educativa (GUI)
 python main.py
+
+# Ejecutar la simulación clásica en consola
+python main.py --modo cli
 ```
 
-La salida en consola mostrará:
+En modo GUI encontrarás 4 pestañas educativas:
+
+1. **Laboratorio de Acceso**: simula solicitudes usuario/recurso/acción y explica la decisión.
+2. **Guía Rápida**: resumen didáctico de RBAC, DAC y MAC.
+3. **Matriz RBAC**: vista tabular de permisos por rol.
+4. **Auditoría**: historial de eventos y permisos DAC vigentes.
+
+La salida en consola (`--modo cli`) mostrará:
 
 1. La **Matriz RBAC** completa
 2. El resultado de cada uno de los **10 casos de uso**
