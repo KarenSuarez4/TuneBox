@@ -143,7 +143,7 @@ def ejecutar_simulacion():
     print(
         """
 +----------------------------------------------------------------------+
-|       TUNEBOX - Simulacion de Control de Acceso RBAC + DAC + MAC     |
+|       TUNEBOX - Simulación de Control de Acceso RBAC + DAC + MAC     |
 +----------------------------------------------------------------------+
 """
     )
@@ -174,7 +174,7 @@ def ejecutar_simulacion():
     motor.solicitar_acceso(usuarios["legal"], recursos["lanzamiento_futuro_sofia"], Accion.AUDITAR)
     motor.solicitar_acceso(usuarios["legal"], recursos["contrato_sofia"], Accion.AUDITAR)
 
-    sep("7. Analitica accede a metricas [esperado: PERMITIDO solo publicas]")
+    sep("7. Analítica accede a métricas [esperado: PERMITIDO solo públicas]")
     motor.solicitar_acceso(usuarios["analitica"], recursos["metricas_agregadas"], Accion.LEER)
     motor.solicitar_acceso(usuarios["analitica"], recursos["ganancias_sofia"], Accion.LEER)
 
@@ -200,22 +200,22 @@ def ejecutar_simulacion():
     motor.imprimir_log()
 
     print("=" * 70)
-    print("  CLASIFICACION DE DATOS SEGUN MAC - TuneBox")
+    print("  CLASIFICACIÓN DE DATOS SEGÚN MAC - TuneBox")
     print("=" * 70)
     clasificaciones = [
         (
-            "PUBLICO (nivel 1)",
-            "Metricas agregadas, nombres artistas, info publica de lanzamientos",
-            "Todos los roles autenticados, APIs externas, Analitica",
+            "PÚBLICO (nivel 1)",
+            "Métricas agregadas, nombres de artistas, info pública de lanzamientos",
+            "Todos los roles autenticados, APIs externas, Analítica",
         ),
         (
             "CONFIDENCIAL (nivel 2)",
-            "Datos de lanzamientos futuros (embargo), campanas de marketing",
-            "Marketing (con restriccion embargo), Admin, Manager, Artista propietario",
+            "Datos de lanzamientos futuros (embargo), campañas de marketing",
+            "Marketing (con restricción de embargo), Admin, Manager, Artista propietario",
         ),
         (
             "SECRETO (nivel 3)",
-            "Ganancias individuales, contratos de distribucion, datos fiscales",
+            "Ganancias individuales, contratos de distribución, datos fiscales",
             "Artista (propios), Manager (representados), Legal, Admin agregado, DAC",
         ),
     ]
@@ -224,4 +224,4 @@ def ejecutar_simulacion():
         print(f"      Datos  : {desc}")
         print(f"      Acceso : {acceso}")
     print("\n" + "=" * 70)
-    print("\n  Simulacion completada. Revise el log de auditoria para el informe.\n")
+    print("\n  Simulación completada. Revise el log de auditoría para el informe.\n")

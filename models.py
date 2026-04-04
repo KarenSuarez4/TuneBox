@@ -7,7 +7,7 @@ from typing import Optional
 
 
 class ClasificacionMAC(Enum):
-    """Niveles de sensibilidad de datos segun MAC."""
+    """Niveles de sensibilidad de datos según MAC."""
 
     PUBLICO = 1
     CONFIDENCIAL = 2
@@ -39,7 +39,7 @@ class Accion(Enum):
 
 @dataclass
 class Recurso:
-    """Representa cualquier activo de informacion dentro de TuneBox."""
+    """Representa cualquier activo de información dentro de TuneBox."""
 
     id: str
     nombre: str
@@ -90,7 +90,7 @@ class PermisoDelegado:
 
 @dataclass
 class RegistroAcceso:
-    """Entrada del log de auditoria."""
+    """Entrada del log de auditoría."""
 
     timestamp: datetime
     usuario_id: str

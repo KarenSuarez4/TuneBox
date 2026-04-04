@@ -1,175 +1,142 @@
-# TuneBox 
+# TuneBox
 
-Sistema de Control de Acceso Integrado para una plataforma de distribución musical, que simula políticas de seguridad **RBAC + DAC + MAC** sobre activos de información de artistas.
+Sistema de control de acceso integrado para una plataforma de distribución musical, con simulación de políticas de seguridad RBAC + DAC + MAC sobre activos de información de artistas.
 
 ---
 
-## Tabla de Contenidos
+## Tabla de contenidos
 
 1. [Descripción general](#descripción-general)
 2. [Modelos de control de acceso](#modelos-de-control-de-acceso)
-   - [RBAC – Role-Based Access Control](#rbac--role-based-access-control)
-   - [DAC – Discretionary Access Control](#dac--discretionary-access-control)
-   - [MAC – Mandatory Access Control](#mac--mandatory-access-control)
-3. [Arquitectura del proyecto](#arquitectura-del-proyecto)
-4. [Entidades principales](#entidades-principales)
-   - [Roles](#roles)
-   - [Tipos de recursos](#tipos-de-recursos)
-   - [Acciones](#acciones)
-   - [Clasificaciones MAC](#clasificaciones-mac)
+3. [Arquitectura actual del proyecto](#arquitectura-actual-del-proyecto)
+4. [Entidades y reglas principales](#entidades-y-reglas-principales)
 5. [Flujo de evaluación de acceso](#flujo-de-evaluación-de-acceso)
 6. [Matriz RBAC](#matriz-rbac)
 7. [Escenario de simulación](#escenario-de-simulación)
-8. [Casos de uso simulados](#casos-de-uso-simulados)
-9. [Registro de auditoría](#registro-de-auditoría)
-10. [Requisitos](#requisitos)
-11. [Instalación y ejecución](#instalación-y-ejecución)
-12. [Estructura del código](#estructura-del-código)
+8. [Interfaz gráfica educativa (GUI)](#interfaz-gráfica-educativa-gui)
+9. [Modo consola (CLI)](#modo-consola-cli)
+10. [Registro de auditoría](#registro-de-auditoría)
+11. [Requisitos](#requisitos)
+12. [Instalación y ejecución](#instalación-y-ejecución)
+13. [Estructura del código](#estructura-del-código)
 
 ---
 
 ## Descripción general
 
-**TuneBox** es un sistema académico/demostrativo que modela el control de acceso a información sensible dentro de una plataforma de distribución musical. El sistema protege activos como canciones, ganancias, métricas, metadatos y contratos aplicando simultáneamente tres modelos de seguridad clásicos:
+TuneBox es un sistema académico/demostrativo orientado al estudio del control de acceso sobre recursos sensibles de una plataforma musical (canciones, ganancias, métricas, metadatos y contratos).
 
-| Modelo | Descripción breve |
-|--------|-------------------|
-| RBAC   | Los permisos se asignan por rol, no por usuario individual. |
-| DAC    | El propietario de un recurso puede delegar acceso temporal a terceros. |
-| MAC    | El acceso se rige por niveles de clasificación jerárquicos y reglas de embargo. |
+El motor combina tres modelos clásicos:
 
-Todos los intentos de acceso —permitidos y denegados— quedan registrados en un log de auditoría inmutable para trazabilidad completa.
+- RBAC (Role-Based Access Control): permisos por rol.
+- DAC (Discretionary Access Control): delegaciones temporales por propietario.
+- MAC (Mandatory Access Control): clasificaciones jerárquicas y embargo de lanzamientos.
+
+Cada intento de acceso (permitido o denegado) queda trazado en un log de auditoría con su motivo y el modelo aplicado.
 
 ---
 
 ## Modelos de control de acceso
 
-### RBAC – Role-Based Access Control
+### RBAC - Role-Based Access Control
 
-Los permisos están definidos en una **matriz Rol × Tipo de recurso × Acciones**. Ningún usuario accede directamente a un recurso sin que su rol lo autorice primero.
+Define permisos por Rol x Tipo de recurso x Acción. Si una acción no está en la matriz del rol, el acceso se deniega (o puede habilitarse por DAC como excepción).
 
-Cada rol tiene un conjunto de acciones permitidas (leer, escribir, eliminar, compartir, auditar) diferenciado por tipo de recurso. Por ejemplo, el equipo de Marketing puede leer métricas públicas pero no tiene acceso a datos financieros.
+### DAC - Discretionary Access Control
 
-### DAC – Discretionary Access Control
+El propietario de un recurso puede delegar acceso temporal a otro usuario con:
 
-El **propietario** de un recurso puede delegar acceso temporal a otro usuario mediante `delegar_permiso()`. Este permiso incluye:
+- recurso específico
+- usuario beneficiario
+- acciones autorizadas
+- fecha de expiración (por defecto 30 días)
 
-- Recurso específico
-- Usuario beneficiario
-- Conjunto de acciones autorizadas
-- Fecha de expiración (configurable, por defecto 30 días)
+En código existen dos caminos:
 
-El DAC actúa como **mecanismo de excepción**: puede conceder acceso incluso cuando RBAC lo denegaría.
+- `delegar_permiso()`: delega e imprime mensaje (uso CLI).
+- `delegar_permiso_silencioso()`: delega sin imprimir (uso GUI).
 
-### MAC – Mandatory Access Control
+### MAC - Mandatory Access Control
 
-Cada recurso tiene un nivel de clasificación y cada usuario tiene un nivel de autorización máximo. La regla es:
+Aplica la regla:
 
-> **nivel_autorización(usuario) ≥ clasificación(recurso)**
+`nivel_autorizacion(usuario) >= clasificacion(recurso)`
 
-Además, existe una **regla de embargo**: recursos `CONFIDENCIAL` o `SECRETO` con una fecha de lanzamiento futura solo son accesibles por el propietario o por `Legal/Compliance`, independientemente del nivel MAC.
+Además, si un recurso tiene embargo activo (`fecha_embargo` en el futuro), solo puede acceder:
+
+- el propietario del recurso
+- `Legal/Compliance`
 
 ---
 
-## Arquitectura del proyecto
+## Arquitectura actual del proyecto
 
-```
+La versión actual está modularizada en varios archivos (ya no monolítica):
+
+```text
 TuneBox/
-├── main.py        # Código fuente completo del sistema
-└── README.md      # Documentación del proyecto
+├── main.py            # Punto de entrada y selector de modo (gui/cli)
+├── models.py          # Enums y dataclasses del dominio
+├── access_control.py  # Matriz RBAC y MotorAcceso
+├── scenario.py        # Construcción de datos y simulación CLI
+├── ui.py              # Interfaz gráfica educativa con Tkinter
+├── mainoriginal.py    # Versión legacy previa (referencia histórica)
+└── README.md          # Documentación
 ```
-
-Todo el sistema está implementado en un único archivo Python (`main.py`) organizado en seis secciones:
-
-| Sección | Contenido |
-|---------|-----------|
-| 1 | Enumeraciones: `ClasificacionMAC`, `Rol`, `Accion` |
-| 2 | Estructuras de datos: `Recurso`, `Usuario`, `PermisoDelegado`, `RegistroAcceso` |
-| 3 | Matriz RBAC |
-| 4 | Motor de control de acceso (`MotorAcceso`) |
-| 5 | Escenario de simulación con 10 casos de uso |
-| 6 | Punto de entrada (`__main__`) |
 
 ---
 
-## Entidades principales
+## Entidades y reglas principales
 
-### Roles
+### Enumeraciones
 
-| Rol | Descripción |
-|-----|-------------|
-| `ARTISTA` | Artista/Productor — accede a sus propios datos |
-| `MANAGER` | Manager — accede a datos de los artistas que representa |
-| `MARKETING` | Equipo de Marketing — accede a métricas públicas, sin datos financieros |
-| `LEGAL_COMPLIANCE` | Legal/Compliance — auditoría irrestricta sobre todos los recursos |
-| `ANALITICA` | Equipo de Analítica — solo métricas agregadas |
-| `ADMINISTRATIVO` | Administrativo — ganancias/contratos agregados; acceso individual vía DAC |
-| `PLATAFORMA_EXTERNA` | Plataforma externa (API) — accede solo a los artistas de su plataforma |
-| `PRODUCTOR_EDITORIAL` | Productor Editorial — rol futuro con permisos básicos |
+- `ClasificacionMAC`: `PUBLICO`, `CONFIDENCIAL`, `SECRETO`
+- `Rol`: `ARTISTA`, `MANAGER`, `MARKETING`, `LEGAL_COMPLIANCE`, `ANALITICA`, `ADMINISTRATIVO`, `PLATAFORMA_EXTERNA`, `PRODUCTOR_EDITORIAL`
+- `Accion`: `LEER`, `ESCRIBIR`, `ELIMINAR`, `COMPARTIR`, `AUDITAR`
 
-### Tipos de recursos
+### Estructuras de datos
 
-| Tipo | Ejemplos |
-|------|---------|
-| `cancion` | Tracks de audio de un artista |
-| `ganancia` | Reportes de ingresos por período |
-| `metrica` | Estadísticas de reproducciones, alcance |
-| `metadato` | Información descriptiva de lanzamientos |
-| `contrato` | Contratos de distribución |
+- `Recurso`: activo protegido, con tipo, clasificación, propietario y embargo opcional.
+- `Usuario`: actor con rol, nivel MAC y atributos de contexto (representación y plataforma).
+- `PermisoDelegado`: delegación temporal DAC.
+- `RegistroAcceso`: evento auditable de cada evaluación.
 
-### Acciones
+### Reglas de contexto adicionales
 
-| Acción | Descripción |
-|--------|-------------|
-| `LEER` | Consultar el contenido de un recurso |
-| `ESCRIBIR` | Crear o modificar un recurso |
-| `ELIMINAR` | Borrar un recurso |
-| `COMPARTIR` | Distribuir o publicar un recurso |
-| `AUDITAR` | Revisar con fines de cumplimiento normativo |
+Sobre RBAC y MAC se aplican restricciones adicionales en el motor:
 
-### Clasificaciones MAC
-
-| Nivel | Valor | Datos representativos | Quién puede acceder |
-|-------|-------|-----------------------|---------------------|
-| `PUBLICO` | 1 | Métricas agregadas, info pública de artistas | Todos los roles autenticados, APIs externas, Analítica |
-| `CONFIDENCIAL` | 2 | Lanzamientos futuros (embargo), campañas de marketing | Marketing (con restricción embargo), Admin, Manager, Artista propietario |
-| `SECRETO` | 3 | Ganancias individuales, contratos, datos fiscales | Artista (propios), Manager (representados), Legal, Admin agregado, DAC |
+- Artista: solo sus propios recursos (excepto si hay DAC vigente).
+- Manager: solo artistas representados (excepto DAC).
+- Administrativo: para datos no propios requiere DAC del propietario.
+- Plataforma externa: solo recursos vinculados a su `plataforma_id`.
 
 ---
 
 ## Flujo de evaluación de acceso
 
-Cuando se invoca `motor.solicitar_acceso(usuario, recurso, accion)`, el motor evalúa en este orden:
+Cuando se evalúa una solicitud (`evaluar_acceso` o `solicitar_acceso`), el motor aplica:
 
-```
-solicitud
-   │
-   ▼
-[1] RBAC ──── NO ──▶ [DAC fallback] ──── SÍ ──▶ PERMITIDO (DAC)
-   │                                     NO ──▶ DENEGADO
-   │ SÍ
-   ▼
-[2] Contexto / Propietario
-   ├─ Artista sin ser propietario       ──▶ DENEGADO
-   ├─ Manager sin representar artista   ──▶ DENEGADO
-   ├─ Admin externo sin delegación DAC  ──▶ DENEGADO
-   └─ API externa sin acceso a plataforma ─▶ DENEGADO
-   │ OK
-   ▼
-[3] MAC (nivel autorización + embargo)
-   │ NO ──▶ DENEGADO
-   │ SÍ
-   ▼
-PERMITIDO (RBAC + MAC)
-```
+```text
+[1] RBAC
+    ├─ si falla -> intenta DAC
+    │   ├─ DAC ok -> PERMITIDO (DAC)
+    │   └─ DAC no -> DENEGADO (RBAC)
+    └─ si pasa -> continúa
 
-Cada paso genera un `RegistroAcceso` con timestamp, resultado, motivo y modelo aplicado.
+[2] Reglas de contexto (propietario/representacion/plataforma/admin)
+    ├─ si falla -> puede intentar DAC según el caso
+    └─ si pasa -> continúa
+
+[3] MAC (nivel + embargo)
+    ├─ si falla -> DENEGADO (MAC)
+    └─ si pasa -> PERMITIDO (RBAC+MAC)
+```
 
 ---
 
 ## Matriz RBAC
 
-Leyenda de siglas: **L**=leer, **E**=escribir, **C**=compartir, **A**=auditar, **D**=eliminar, **--**=sin acceso.
+Leyenda: `L`=leer, `E`=escribir, `C`=compartir, `A`=auditar, `D`=eliminar, `--`=sin acceso.
 
 | Rol | cancion | ganancia | metrica | metadato | contrato |
 |-----|---------|----------|---------|----------|----------|
@@ -177,147 +144,154 @@ Leyenda de siglas: **L**=leer, **E**=escribir, **C**=compartir, **A**=auditar, *
 | Manager | L | L | L | L E | L |
 | Equipo de Marketing | L | -- | L | L | -- |
 | Legal/Compliance | L A | L A | L A | L A | L A |
-| Equipo de Analítica | L | -- | L | L | -- |
+| Equipo de Analitica | L | -- | L | L | -- |
 | Administrativo | -- | L | -- | L | L |
 | Plataforma Externa (API) | L | -- | L | L | -- |
 | Productor Editorial | L E | L | L | L E | L |
 
-> **Nota:** Las restricciones de propietario (DAC) y nivel (MAC) se aplican adicionalmente sobre esta matriz.
+Notas operativas:
+
+- Manager: acceso condicionado a artistas representados.
+- Marketing: métricas sujetas a embargo.
+- Administrativo externo: acceso individual mediante DAC.
 
 ---
 
 ## Escenario de simulación
 
-El escenario incluye los siguientes usuarios y recursos preconstruidos:
+`scenario.py` construye un entorno base con:
 
-### Usuarios
+- 10 usuarios (artistas, manager, marketing, legal, analítica, administrativos, API externa y productor editorial)
+- 7 recursos (canciones, ganancias, métricas agregadas, contrato y un recurso con embargo)
+- 1 motor de acceso (`MotorAcceso`)
 
-| ID | Nombre | Rol | Nivel MAC |
-|----|--------|-----|-----------|
-| u001 | Sofia Ramos | Artista | SECRETO |
-| u002 | Carlos Vega | Artista | SECRETO |
-| u003 | Laura Méndez | Manager (representa a Sofía) | SECRETO |
-| u004 | Pedro Torres | Marketing | CONFIDENCIAL |
-| u005 | Ana Ríos | Legal/Compliance | SECRETO |
-| u006 | Luis Parra | Analítica | PÚBLICO |
-| u007 | María Gil | Administrativo | CONFIDENCIAL |
-| u008 | Spotify API | Plataforma Externa (de Sofía) | PÚBLICO |
-| u009 | Rodrigo Salas | Administrativo (contador externo) | SECRETO |
-| u010 | Diana Cruz | Productor Editorial | CONFIDENCIAL |
+Los casos incluyen:
 
-### Recursos
-
-| ID | Nombre | Tipo | Clasificación | Propietario |
-|----|--------|------|---------------|-------------|
-| r001 | Track 'Noche Eterna' – Sofía | cancion | PÚBLICO | u001 |
-| r002 | Ganancias Q1-2026 – Sofía | ganancia | SECRETO | u001 |
-| r003 | Album 'Eclipse' (PRELANZAMIENTO) – Sofía | metrica | CONFIDENCIAL | u001 (con embargo) |
-| r004 | Ganancias Q1-2026 – Carlos | ganancia | SECRETO | u002 |
-| r005 | Track 'Solar' – Carlos | cancion | PÚBLICO | u002 |
-| r006 | Métricas Agregadas Plataforma | metrica | PÚBLICO | sistema |
-| r007 | Contrato Distribución – Sofía | contrato | SECRETO | u001 |
+1. acceso propio de artista
+2. intento de acceso cruzado entre artistas
+3. manager sobre artista representado
+4. manager sobre no representado
+5. marketing con y sin embargo
+6. auditoría legal en datos secretos
+7. analítica sobre público vs secreto
+8. API externa sobre artista propio vs ajeno
+9. delegación DAC a contador externo
+10. validación del rol Productor Editorial
 
 ---
 
-## Casos de uso simulados
+## Interfaz gráfica educativa (GUI)
 
-| # | Caso | Resultado esperado |
-|---|------|--------------------|
-| 1 | Artista accede a sus propios datos (ganancias y canción) | ✅ PERMITIDO |
-| 2 | Artista intenta ver datos de otro artista (privacidad) | ❌ DENEGADO |
-| 3 | Manager accede a datos de su artista representado | ✅ PERMITIDO |
-| 4 | Manager intenta acceder a artista NO representado (conflicto de interés) | ❌ DENEGADO |
-| 5 | Marketing lee métricas bajo embargo / métricas públicas / ganancias | ❌/✅/❌ |
-| 6 | Legal/Compliance audita datos SECRETOS con y sin embargo | ✅ PERMITIDO |
-| 7 | Analítica accede a métricas públicas y ganancias individuales | ✅/❌ |
-| 8 | Spotify API accede a datos de Sofía y de Carlos | ✅/❌ |
-| 9 | DAC: Sofía delega acceso al contador externo (30 días) | ✅ PERMITIDO (DAC) / ❌ sin DAC |
-| 10 | Productor Editorial accede a canciones y ganancias (rol futuro) | ✅/❌ |
+La GUI está implementada en `ui.py` con Tkinter y se lanza con `lanzar_gui()`.
+
+Incluye 4 pestañas:
+
+1. `Laboratorio`: simulación de solicitudes y explicación del resultado.
+2. `Guia`: resumen didáctico de RBAC, DAC y MAC.
+3. `Matriz RBAC`: tabla visual con leyendas y notas de contexto.
+4. `Auditoria`: historial de eventos y permisos DAC vigentes.
+
+Funciones destacadas de la GUI:
+
+- evaluación interactiva usando `motor.evaluar_acceso()`
+- badge del último resultado (permitido/denegado)
+- creación de permisos DAC desde formulario
+- prevención de delegaciones DAC duplicadas vigentes
+- ejecución rápida de demo de casos predefinidos
+- limpieza de auditoría en caliente
+
+---
+
+## Modo consola (CLI)
+
+`ejecutar_simulacion()` imprime:
+
+1. matriz RBAC
+2. 10 casos de uso con resultado en tiempo real
+3. log completo de auditoría con totales
+4. tabla resumen de clasificación MAC
 
 ---
 
 ## Registro de auditoría
 
-Cada intento de acceso genera un `RegistroAcceso` con los siguientes campos:
+Cada evaluación genera un `RegistroAcceso` con:
 
-| Campo | Descripción |
-|-------|-------------|
-| `timestamp` | Fecha y hora exacta del intento |
-| `usuario_id` / `usuario_nombre` | Identidad del solicitante |
-| `usuario_rol` | Rol en el momento del acceso |
-| `recurso_id` / `recurso_nombre` | Recurso solicitado |
-| `accion` | Acción solicitada |
-| `resultado` | `PERMITIDO` o `DENEGADO` |
-| `motivo` | Razón detallada de la decisión |
-| `modelo_aplicado` | Modelo que tomó la decisión (`RBAC`, `MAC`, `DAC`, `RBAC+MAC`, etc.) |
+- `timestamp`
+- `usuario_id`, `usuario_nombre`, `usuario_rol`
+- `recurso_id`, `recurso_nombre`
+- `accion`
+- `resultado`
+- `motivo`
+- `modelo_aplicado`
 
-Al finalizar la simulación se imprime el log completo con totales de intentos permitidos y denegados.
+La trazabilidad permite explicar por qué una solicitud se permitió o se denegó.
 
 ---
 
 ## Requisitos
 
-- Python **3.8** o superior
-- Sin dependencias externas (solo módulos de la biblioteca estándar: `dataclasses`, `datetime`, `enum`, `uuid`, `typing`)
+- Python 3.8 o superior
+- Sin dependencias externas (solo biblioteca estándar)
+
+Módulos usados en el proyecto:
+
+- `argparse`, `uuid`, `datetime`
+- `dataclasses`, `enum`, `typing`
+- `tkinter` (`ttk`, `messagebox`) para GUI
 
 ---
 
 ## Instalación y ejecución
 
 ```bash
-# Clonar el repositorio
+# Clonar repositorio
 git clone https://github.com/KarenSuarez4/TuneBox.git
 cd TuneBox
 
-# Ejecutar la herramienta educativa (GUI)
+# Modo GUI (por defecto)
 python main.py
+# o
+python main.py --modo gui
 
-# Ejecutar la simulación clásica en consola
+# Modo CLI
 python main.py --modo cli
 ```
-
-En modo GUI encontrarás 4 pestañas educativas:
-
-1. **Laboratorio de Acceso**: simula solicitudes usuario/recurso/acción y explica la decisión.
-2. **Guía Rápida**: resumen didáctico de RBAC, DAC y MAC.
-3. **Matriz RBAC**: vista tabular de permisos por rol.
-4. **Auditoría**: historial de eventos y permisos DAC vigentes.
-
-La salida en consola (`--modo cli`) mostrará:
-
-1. La **Matriz RBAC** completa
-2. El resultado de cada uno de los **10 casos de uso**
-3. El **registro completo de auditoría** con totales
-4. La **tabla de clasificación MAC** de datos
 
 ---
 
 ## Estructura del código
 
-```
-main.py
-│
-├── ClasificacionMAC (Enum)      – Niveles PUBLICO / CONFIDENCIAL / SECRETO
-├── Rol (Enum)                   – Roles de la plataforma
-├── Accion (Enum)                – Acciones posibles sobre recursos
-│
-├── Recurso (dataclass)          – Activo de información
-├── Usuario (dataclass)          – Actor del sistema
-├── PermisoDelegado (dataclass)  – Delegación DAC temporal
-├── RegistroAcceso (dataclass)   – Entrada del log de auditoría
-│
-├── RBAC_MATRIZ (dict)           – Matriz de permisos Rol × Recurso × Acciones
-│
-├── MotorAcceso (class)
-│   ├── solicitar_acceso()       – Punto de entrada: evalúa RBAC → contexto → MAC → DAC
-│   ├── delegar_permiso()        – Crea un permiso DAC temporal
-│   ├── imprimir_log()           – Muestra el registro de auditoría
-│   └── imprimir_matriz_rbac()   – Muestra la matriz de permisos
-│
-├── construir_escenario()        – Instancia usuarios, recursos y motor
-└── ejecutar_simulacion()        – Ejecuta los 10 casos de uso
-```
+### `main.py`
 
----
+- configura argumentos de ejecución (`--modo gui|cli`)
+- enruta a `lanzar_gui()` o `ejecutar_simulacion()`
 
-> **Versión:** 1.0 · **Año:** 2026 · **Equipo:** Seguridad TuneBox
+### `models.py`
+
+- define enums de negocio (`ClasificacionMAC`, `Rol`, `Accion`)
+- define dataclasses (`Recurso`, `Usuario`, `PermisoDelegado`, `RegistroAcceso`)
+
+### `access_control.py`
+
+- declara `RBAC_MATRIZ`
+- implementa `MotorAcceso`:
+  - validaciones RBAC/MAC/DAC
+  - validaciones de contexto (propietario, representación, API externa)
+  - auditoría y utilidades de impresión
+
+### `scenario.py`
+
+- `construir_escenario()`: crea usuarios, recursos y motor
+- `ejecutar_simulacion()`: reproduce los casos de uso en consola
+
+### `ui.py`
+
+- `TuneBoxGUI`: laboratorio educativo interactivo
+- `lanzar_gui()`: inicia la aplicación Tkinter
+
+
+
+Versión: 2.0  
+Año: 2026  
+Equipo: Seguridad TuneBox

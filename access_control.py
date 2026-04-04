@@ -142,7 +142,7 @@ class MotorAcceso:
         return usuario.plataforma_id == recurso.propietario_id
 
     def evaluar_acceso(self, usuario, recurso, accion):
-        """Version silenciosa para GUI y CLI. Retorna (permitido, registro)."""
+        """Versión silenciosa para GUI y CLI. Retorna (permitido, registro)."""
         rbac_ok, rbac_msg = self._verificar_rbac(usuario, recurso, accion)
         if not rbac_ok:
             dac_ok, dac_msg = self._verificar_dac(usuario, recurso, accion)
@@ -153,6 +153,9 @@ class MotorAcceso:
         es_propietario = self._es_propietario(usuario, recurso)
 
         if usuario.rol == Rol.ARTISTA and not es_propietario:
+            dac_ok, dac_msg = self._verificar_dac(usuario, recurso, accion)
+            if dac_ok:
+                return True, self._registrar(usuario, recurso, accion, "PERMITIDO", dac_msg, "DAC")
             return False, self._registrar(
                 usuario,
                 recurso,
@@ -163,6 +166,9 @@ class MotorAcceso:
             )
 
         if usuario.rol == Rol.MANAGER and not self._manager_representa_artista(usuario, recurso):
+            dac_ok, dac_msg = self._verificar_dac(usuario, recurso, accion)
+            if dac_ok:
+                return True, self._registrar(usuario, recurso, accion, "PERMITIDO", dac_msg, "DAC")
             return False, self._registrar(
                 usuario,
                 recurso,
@@ -244,7 +250,7 @@ class MotorAcceso:
 
     def imprimir_log(self):
         print("\n" + "=" * 80)
-        print("  REGISTRO COMPLETO DE AUDITORIA - TUNEBOX")
+        print("  REGISTRO COMPLETO DE AUDITORÍA - TUNEBOX")
         print("=" * 80)
         permitidos = sum(1 for e in self.log if e.resultado == "PERMITIDO")
         denegados = sum(1 for e in self.log if e.resultado == "DENEGADO")

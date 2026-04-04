@@ -9,12 +9,13 @@ from scenario import construir_escenario
 
 
 class TuneBoxGUI:
-    """Interfaz grafica educativa orientada a exploracion guiada."""
+    """Interfaz gráfica educativa orientada a exploración guiada."""
 
     COLORS = {
         "bg": "#f4f7f5",
         "panel": "#ffffff",
         "panel_soft": "#e8efec",
+        "panel_accent": "#eff6f3",
         "primary": "#1f6f5f",
         "primary_soft": "#dcefe8",
         "text": "#13302a",
@@ -108,6 +109,29 @@ class TuneBoxGUI:
 
         estilo.configure("Soft.TButton", font=("Segoe UI", 10), padding=(10, 7), borderwidth=0)
 
+        estilo.configure(
+            "Matrix.Treeview",
+            font=("Segoe UI", 10),
+            rowheight=29,
+            background="#ffffff",
+            fieldbackground="#ffffff",
+            bordercolor=self.COLORS["panel_soft"],
+            borderwidth=0,
+        )
+        estilo.configure(
+            "Matrix.Treeview.Heading",
+            font=("Segoe UI", 10, "bold"),
+            background=self.COLORS["primary_soft"],
+            foreground=self.COLORS["text"],
+            relief="flat",
+            padding=(8, 6),
+        )
+        estilo.map(
+            "Matrix.Treeview",
+            background=[("selected", "#cde7de")],
+            foreground=[("selected", self.COLORS["text"])],
+        )
+
     def _construir_layout(self):
         root = ttk.Frame(self.raiz, style="Root.TFrame", padding=14)
         root.pack(fill="both", expand=True)
@@ -118,7 +142,7 @@ class TuneBoxGUI:
         ttk.Label(top, text="TuneBox Learning Lab", style="Heading.TLabel").pack(anchor="w")
         ttk.Label(
             top,
-            text="Aprende control de acceso con simulaciones interactivas y retroalimentacion inmediata.",
+            text="Aprende control de acceso con simulaciones interactivas y retroalimentación inmediata.",
             style="Caption.TLabel",
         ).pack(anchor="w", pady=(2, 0))
 
@@ -142,9 +166,9 @@ class TuneBoxGUI:
         self.tab_auditoria = ttk.Frame(notebook, padding=10)
 
         notebook.add(self.tab_lab, text="Laboratorio")
-        notebook.add(self.tab_teoria, text="Guia")
+        notebook.add(self.tab_teoria, text="Guía")
         notebook.add(self.tab_matriz, text="Matriz RBAC")
-        notebook.add(self.tab_auditoria, text="Auditoria")
+        notebook.add(self.tab_auditoria, text="Auditoría")
 
         self._tab_laboratorio()
         self._tab_teoria()
@@ -185,7 +209,7 @@ class TuneBoxGUI:
             card_selector.columnconfigure(i, weight=1)
 
         card_contexto = self._card(self.tab_lab)
-        ttk.Label(card_contexto, text="Contexto didactico", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
+        ttk.Label(card_contexto, text="Contexto didáctico", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
         self.lbl_contexto_usuario = ttk.Label(card_contexto, text="", style="Body.TLabel")
         self.lbl_contexto_usuario.pack(anchor="w")
         self.lbl_contexto_recurso = ttk.Label(card_contexto, text="", style="Body.TLabel")
@@ -193,24 +217,8 @@ class TuneBoxGUI:
         self.lbl_contexto_regla = ttk.Label(card_contexto, text="", style="Body.TLabel")
         self.lbl_contexto_regla.pack(anchor="w", pady=(2, 0))
 
-        card_resultado = ttk.Frame(self.tab_lab, style="Card.TFrame", padding=12)
-        card_resultado.pack(fill="both", expand=True, pady=(0, 10))
-        ttk.Label(card_resultado, text="Explicacion del resultado", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
-        self.txt_resultado = tk.Text(
-            card_resultado,
-            wrap="word",
-            font=("Cascadia Code", 10),
-            bg="#f7faf9",
-            fg=self.COLORS["text"],
-            relief="flat",
-            padx=10,
-            pady=8,
-        )
-        self.txt_resultado.pack(fill="both", expand=True)
-        self._set_text(self.txt_resultado, "Selecciona datos y presiona Evaluar para iniciar.")
-
         card_dac = self._card(self.tab_lab)
-        ttk.Label(card_dac, text="Delegacion DAC", style="Section.TLabel").grid(
+        ttk.Label(card_dac, text="Delegación DAC (propietario -> beneficiario)", style="Section.TLabel").grid(
             row=0, column=0, columnspan=6, sticky="w", pady=(0, 8)
         )
 
@@ -226,26 +234,42 @@ class TuneBoxGUI:
         self.cmb_recurso_dac = ttk.Combobox(card_dac, state="readonly", width=34)
         self.cmb_recurso_dac.grid(row=2, column=2, sticky="we", padx=(0, 8))
 
-        ttk.Label(card_dac, text="Accion", style="Body.TLabel").grid(row=1, column=3, sticky="w")
+        ttk.Label(card_dac, text="Acción", style="Body.TLabel").grid(row=1, column=3, sticky="w")
         self.cmb_accion_dac = ttk.Combobox(card_dac, state="readonly", width=16)
         self.cmb_accion_dac.grid(row=2, column=3, sticky="we", padx=(0, 8))
 
-        ttk.Label(card_dac, text="Dias", style="Body.TLabel").grid(row=1, column=4, sticky="w")
+        ttk.Label(card_dac, text="Días", style="Body.TLabel").grid(row=1, column=4, sticky="w")
         self.spn_dias = tk.Spinbox(card_dac, from_=1, to=365, width=8)
         self.spn_dias.grid(row=2, column=4, sticky="w")
 
-        ttk.Button(card_dac, text="Delegar", style="Accent.TButton", command=self._delegar).grid(
+        ttk.Button(card_dac, text="Delegar permiso DAC", style="Accent.TButton", command=self._delegar).grid(
             row=2, column=5, sticky="e", padx=(10, 0)
         )
 
         for i in range(5):
             card_dac.columnconfigure(i, weight=1)
 
+        card_resultado = ttk.Frame(self.tab_lab, style="Card.TFrame", padding=12)
+        card_resultado.pack(fill="both", expand=True, pady=(0, 10))
+        ttk.Label(card_resultado, text="Explicación del resultado", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
+        self.txt_resultado = tk.Text(
+            card_resultado,
+            wrap="word",
+            font=("Cascadia Code", 10),
+            bg="#f7faf9",
+            fg=self.COLORS["text"],
+            relief="flat",
+            padx=10,
+            pady=8,
+        )
+        self.txt_resultado.pack(fill="both", expand=True)
+        self._set_text(self.txt_resultado, "Selecciona datos y presiona Evaluar para iniciar.")
+
     def _tab_teoria(self):
         card = ttk.Frame(self.tab_teoria, style="Card.TFrame", padding=12)
         card.pack(fill="both", expand=True)
 
-        ttk.Label(card, text="Guia rapida", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
+        ttk.Label(card, text="Guía rápida", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
         texto = tk.Text(
             card,
             wrap="word",
@@ -267,13 +291,13 @@ DAC
 - Permite delegaciones temporales por parte del propietario.
 
 MAC
-- Obliga a cumplir niveles de clasificacion y reglas de embargo.
+- Obliga a cumplir niveles de clasificación y reglas de embargo.
 
 Secuencia educativa recomendada
 1. Ejecuta una solicitud permitida y una denegada.
 2. Analiza el motivo exacto y el modelo que decidio.
 3. Crea delegacion DAC y repite la solicitud.
-4. Contrasta el cambio en la auditoria.
+4. Contrasta el cambio en la auditoría.
 """.strip(),
         )
         texto.configure(state="disabled")
@@ -284,37 +308,135 @@ Secuencia educativa recomendada
 
         ttk.Label(card, text="Matriz RBAC", style="Section.TLabel").pack(anchor="w", pady=(0, 6))
 
-        columnas = ("rol", "cancion", "ganancia", "metrica", "metadato", "contrato")
-        self.tbl_matriz = ttk.Treeview(card, columns=columnas, show="headings", height=16)
+        meta = tk.Frame(card, bg=self.COLORS["panel_accent"], padx=10, pady=8)
+        meta.pack(fill="x", pady=(0, 8))
+        tk.Label(
+            meta,
+            text="Roles: 8",
+            bg=self.COLORS["panel_accent"],
+            fg=self.COLORS["text"],
+            font=("Segoe UI", 9, "bold"),
+        ).pack(side="left")
+        tk.Label(
+            meta,
+            text="Recursos: 5",
+            bg=self.COLORS["panel_accent"],
+            fg=self.COLORS["text"],
+            font=("Segoe UI", 9, "bold"),
+            padx=16,
+        ).pack(side="left")
+        tk.Label(
+            meta,
+            text="Tip: selecciona una fila para compararla con auditoría",
+            bg=self.COLORS["panel_accent"],
+            fg=self.COLORS["muted"],
+            font=("Segoe UI", 9),
+        ).pack(side="right")
+
+        leyenda = tk.Frame(card, bg=self.COLORS["panel"], pady=6)
+        leyenda.pack(fill="x")
+        tk.Label(
+            leyenda,
+            text="Leyenda: L=leer, E=escribir, C=compartir, A=auditar, --=sin acceso",
+            bg=self.COLORS["panel"],
+            fg=self.COLORS["muted"],
+            font=("Segoe UI", 10),
+        ).pack(anchor="w")
+        tk.Label(
+            leyenda,
+            text="(*) Manager: solo artistas representados. (**) Marketing: solo después de levantarse el embargo.",
+            bg=self.COLORS["panel"],
+            fg=self.COLORS["muted"],
+            font=("Segoe UI", 10, "italic"),
+        ).pack(anchor="w")
+
+        columnas = ("rol", "canciones", "ganancias", "metricas", "metadatos", "contratos", "nivel_mac")
+        tabla_wrap = ttk.Frame(card, style="Card.TFrame")
+        tabla_wrap.pack(fill="both", expand=True)
+
+        scroll_y = ttk.Scrollbar(tabla_wrap, orient="vertical")
+        scroll_x = ttk.Scrollbar(tabla_wrap, orient="horizontal")
+
+        self.tbl_matriz = ttk.Treeview(
+            tabla_wrap,
+            columns=columnas,
+            show="headings",
+            height=16,
+            style="Matrix.Treeview",
+            yscrollcommand=scroll_y.set,
+            xscrollcommand=scroll_x.set,
+        )
+        scroll_y.configure(command=self.tbl_matriz.yview)
+        scroll_x.configure(command=self.tbl_matriz.xview)
 
         headers = {
             "rol": "Rol",
-            "cancion": "Cancion",
-            "ganancia": "Ganancia",
-            "metrica": "Metrica",
-            "metadato": "Metadato",
-            "contrato": "Contrato",
+            "canciones": "Canciones",
+            "ganancias": "Ganancias",
+            "metricas": "Métricas",
+            "metadatos": "Metadatos",
+            "contratos": "Contratos",
+            "nivel_mac": "Nivel MAC",
         }
-        widths = {"rol": 260, "cancion": 100, "ganancia": 100, "metrica": 100, "metadato": 100, "contrato": 100}
+        widths = {
+            "rol": 250,
+            "canciones": 110,
+            "ganancias": 110,
+            "metricas": 110,
+            "metadatos": 110,
+            "contratos": 110,
+            "nivel_mac": 130,
+        }
 
         for col in columnas:
             self.tbl_matriz.heading(col, text=headers[col])
             self.tbl_matriz.column(col, width=widths[col], anchor="center")
 
-        self.tbl_matriz.pack(fill="both", expand=True)
+        self.tbl_matriz.column("rol", anchor="w", width=260)
+
+        self.tbl_matriz.pack(side="left", fill="both", expand=True)
+        scroll_y.pack(side="right", fill="y")
+        scroll_x.pack(side="bottom", fill="x")
+
+        nivel_por_rol = {
+            "Artista/Productor": "SECRETO",
+            "Manager": "SECRETO",
+            "Equipo de Marketing": "CONFIDENCIAL",
+            "Legal/Compliance": "SECRETO",
+            "Equipo de Analitica": "PÚBLICO",
+            "Administrativo": "CONFIDENCIAL",
+            "Plataforma Externa (API)": "PÚBLICO",
+            "Productor Editorial": "CONFIDENCIAL",
+        }
+
+        def formatear_acciones(acciones):
+            orden = ["leer", "escribir", "compartir", "auditar", "eliminar"]
+            letras = {
+                "leer": "L",
+                "escribir": "E",
+                "compartir": "C",
+                "auditar": "A",
+                "eliminar": "D",
+            }
+            presentes = [letras[a] for a in orden if any(x.value == a for x in acciones)]
+            return ", ".join(presentes) if presentes else "--"
 
         tipos = ["cancion", "ganancia", "metrica", "metadato", "contrato"]
-        for rol, permisos in RBAC_MATRIZ.items():
+        for idx, (rol, permisos) in enumerate(RBAC_MATRIZ.items()):
             fila = [rol.value]
             for tipo in tipos:
-                acciones = permisos.get(tipo, set())
-                siglas = "".join(sorted(a.value[0].upper() for a in acciones)) or "--"
-                fila.append(siglas)
-            self.tbl_matriz.insert("", "end", values=fila)
+                texto = formatear_acciones(permisos.get(tipo, set()))
+                if rol.value == "Manager" and tipo == "ganancia" and texto != "--":
+                    texto = f"{texto}*"
+                if rol.value == "Equipo de Marketing" and tipo == "metrica" and texto != "--":
+                    texto = f"{texto}**"
+                fila.append(texto)
+            fila.append(nivel_por_rol.get(rol.value, "-"))
+            tag = "even" if idx % 2 == 0 else "odd"
+            self.tbl_matriz.insert("", "end", values=fila, tags=(tag,))
 
-        ttk.Label(card, text="Leyenda: L=leer, E=escribir, C=compartir, A=auditar, D=eliminar", style="Body.TLabel").pack(
-            anchor="w", pady=(8, 0)
-        )
+        self.tbl_matriz.tag_configure("even", background="#ffffff")
+        self.tbl_matriz.tag_configure("odd", background="#f8fbfa")
 
     def _tab_auditoria(self):
         top = ttk.Frame(self.tab_auditoria, style="Root.TFrame")
@@ -415,7 +537,7 @@ Secuencia educativa recomendada
             text=f"Usuario: {usuario.nombre} | Rol: {usuario.rol.value} | Nivel MAC: {usuario.nivel_autorizacion.name}"
         )
         self.lbl_contexto_recurso.configure(
-            text=f"Recurso: {recurso.nombre} | Tipo: {recurso.tipo} | Clasificacion: {recurso.clasificacion.name} | {embargo}"
+            text=f"Recurso: {recurso.nombre} | Tipo: {recurso.tipo} | Clasificación: {recurso.clasificacion.name} | {embargo}"
         )
         self.lbl_contexto_regla.configure(
             text="Regla base: RBAC valida rol, MAC valida nivel y DAC permite excepciones temporales."
@@ -423,9 +545,9 @@ Secuencia educativa recomendada
 
     def _actualizar_badge(self, permitido):
         if permitido:
-            self.badge_estado.configure(text="Ultimo resultado: PERMITIDO", bg=self.COLORS["ok_bg"], fg=self.COLORS["ok_fg"])
+            self.badge_estado.configure(text="Último resultado: PERMITIDO", bg=self.COLORS["ok_bg"], fg=self.COLORS["ok_fg"])
         else:
-            self.badge_estado.configure(text="Ultimo resultado: DENEGADO", bg=self.COLORS["no_bg"], fg=self.COLORS["no_fg"])
+            self.badge_estado.configure(text="Último resultado: DENEGADO", bg=self.COLORS["no_bg"], fg=self.COLORS["no_fg"])
 
     def _evaluar(self):
         usuario = self._usuario_actual()
@@ -437,11 +559,11 @@ Secuencia educativa recomendada
 
         contenido = "\n".join(
             [
-                "Resultado de evaluacion",
+                "Resultado de evaluación",
                 "=" * 58,
                 f"Usuario   : {usuario.nombre} ({usuario.rol.value})",
                 f"Recurso   : {recurso.nombre}",
-                f"Accion    : {accion.value}",
+                f"Acción    : {accion.value}",
                 f"Decision  : {'PERMITIDO' if permitido else 'DENEGADO'}",
                 f"Modelo    : {registro.modelo_aplicado}",
                 "-" * 58,
@@ -449,6 +571,7 @@ Secuencia educativa recomendada
                 registro.motivo,
                 "",
                 "Interpretacion:",
+                "Interpretación:",
                 "1) RBAC decide permisos por rol.",
                 "2) Se evalua contexto de propietario/representacion.",
                 "3) MAC verifica nivel y embargo.",
@@ -469,8 +592,27 @@ Secuencia educativa recomendada
         try:
             dias = int(self.spn_dias.get())
         except ValueError:
-            messagebox.showerror("DAC", "El numero de dias no es valido.")
+            messagebox.showerror("DAC", "El número de días no es válido.")
             return
+
+        # Evita duplicados activos del mismo permiso para no confundir el laboratorio.
+        for permiso in self.motor.permisos_dac:
+            if (
+                permiso.otorgado_por == propietario.id
+                and permiso.otorgado_a == beneficiario.id
+                and permiso.recurso_id == recurso.id
+                and accion in permiso.acciones
+                and permiso.esta_vigente()
+            ):
+                messagebox.showinfo(
+                    "DAC",
+                    (
+                        "Ya existe un permiso DAC vigente con esos datos.\n"
+                        f"ID: {permiso.id} | Expira: {permiso.expira.strftime('%Y-%m-%d')}"
+                    ),
+                )
+                self._actualizar_dac_vigente()
+                return
 
         try:
             permiso = self.motor.delegar_permiso_silencioso(
@@ -490,7 +632,7 @@ Secuencia educativa recomendada
                 f"Permiso {permiso.id} creado:\n"
                 f"{propietario.nombre} -> {beneficiario.nombre}\n"
                 f"Recurso: {recurso.nombre}\n"
-                f"Accion: {accion.value} | Dias: {dias}"
+                f"Acción: {accion.value} | Días: {dias}"
             ),
         )
         self._actualizar_dac_vigente()
@@ -545,7 +687,7 @@ Secuencia educativa recomendada
     def _limpiar_auditoria(self):
         self.motor.log.clear()
         self._actualizar_auditoria()
-        self._set_text(self.txt_resultado, "Auditoria reiniciada. Ejecuta nuevas pruebas para comparar resultados.")
+        self._set_text(self.txt_resultado, "Auditoría reiniciada. Ejecuta nuevas pruebas para comparar resultados.")
         self.badge_estado.configure(text="Sin evaluaciones aun", bg=self.COLORS["panel_soft"], fg=self.COLORS["text"])
 
     def _demo(self):
@@ -564,7 +706,7 @@ Secuencia educativa recomendada
         self._actualizar_dac_vigente()
         self._set_text(
             self.txt_resultado,
-            "Demo ejecutada: revisa la pestana de Auditoria para ver la mezcla de permitidos y denegados.",
+            "Demo ejecutada: revisa la pestaña de Auditoría para ver la mezcla de permitidos y denegados.",
         )
 
 

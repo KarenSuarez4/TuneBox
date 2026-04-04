@@ -16,7 +16,7 @@ def main():
         "--modo",
         choices=["gui", "cli"],
         default="gui",
-        help="Modo de ejecucion: gui (interfaz educativa) o cli (simulacion en consola)",
+        help="Modo de ejecución: gui (interfaz educativa) o cli (simulación en consola)",
     )
     args = parser.parse_args()
 
