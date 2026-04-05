@@ -8,7 +8,8 @@ from scenario import ejecutar_simulacion
 from ui import lanzar_gui
 
 
-def main():
+def main() -> None:
+    """Parsea argumentos y enruta la ejecución al modo GUI o CLI."""
     parser = argparse.ArgumentParser(
         description="TuneBox - Simulador y herramienta educativa de control de acceso"
     )

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import messagebox, ttk
+from typing import Iterable
 
 from access_control import RBAC_MATRIZ
-from models import Accion
+from models import Accion, Recurso, Usuario
 from scenario import construir_escenario
 
 
@@ -26,7 +27,8 @@ class TuneBoxGUI:
         "no_fg": "#9b1c1c",
     }
 
-    def __init__(self, raiz: tk.Tk):
+    def __init__(self, raiz: tk.Tk) -> None:
+        """Inicializa la ventana principal, datos del escenario y widgets base."""
         self.raiz = raiz
         self.raiz.title("TuneBox Lab - RBAC + DAC + MAC")
         self.raiz.geometry("1240x780")
@@ -45,7 +47,8 @@ class TuneBoxGUI:
         self._actualizar_auditoria()
         self._actualizar_dac_vigente()
 
-    def _construir_estilos(self):
+    def _construir_estilos(self) -> None:
+        """Define estilos ttk compartidos para mantener consistencia visual en toda la GUI."""
         estilo = ttk.Style()
         try:
             estilo.theme_use("clam")
@@ -132,7 +135,8 @@ class TuneBoxGUI:
             foreground=[("selected", self.COLORS["text"])],
         )
 
-    def _construir_layout(self):
+    def _construir_layout(self) -> None:
+        """Construye la estructura general: encabezado y pestañas principales."""
         root = ttk.Frame(self.raiz, style="Root.TFrame", padding=14)
         root.pack(fill="both", expand=True)
 
@@ -175,12 +179,14 @@ class TuneBoxGUI:
         self._tab_matriz()
         self._tab_auditoria()
 
-    def _card(self, parent):
+    def _card(self, parent: ttk.Frame) -> ttk.Frame:
+        """Crea una tarjeta visual reutilizable para agrupar controles relacionados."""
         frame = ttk.Frame(parent, style="Card.TFrame", padding=12)
         frame.pack(fill="x", pady=(0, 10))
         return frame
 
-    def _tab_laboratorio(self):
+    def _tab_laboratorio(self) -> None:
+        """Renderiza la pestaña interactiva para evaluar solicitudes y delegar DAC."""
         card_selector = self._card(self.tab_lab)
         ttk.Label(card_selector, text="Simular solicitud", style="Section.TLabel").grid(
             row=0, column=0, columnspan=4, sticky="w", pady=(0, 8)
@@ -265,7 +271,8 @@ class TuneBoxGUI:
         self.txt_resultado.pack(fill="both", expand=True)
         self._set_text(self.txt_resultado, "Selecciona datos y presiona Evaluar para iniciar.")
 
-    def _tab_teoria(self):
+    def _tab_teoria(self) -> None:
+        """Muestra una guia textual con conceptos clave y secuencia de aprendizaje."""
         card = ttk.Frame(self.tab_teoria, style="Card.TFrame", padding=12)
         card.pack(fill="both", expand=True)
 
@@ -302,7 +309,8 @@ Secuencia educativa recomendada
         )
         texto.configure(state="disabled")
 
-    def _tab_matriz(self):
+    def _tab_matriz(self) -> None:
+        """Pinta la matriz RBAC con leyenda y nivel MAC sugerido por rol."""
         card = ttk.Frame(self.tab_matriz, style="Card.TFrame", padding=12)
         card.pack(fill="both", expand=True)
 
@@ -409,7 +417,8 @@ Secuencia educativa recomendada
             "Productor Editorial": "CONFIDENCIAL",
         }
 
-        def formatear_acciones(acciones):
+        def formatear_acciones(acciones: Iterable[Accion]) -> str:
+            """Convierte acciones permitidas en siglas legibles para la tabla."""
             orden = ["leer", "escribir", "compartir", "auditar", "eliminar"]
             letras = {
                 "leer": "L",
@@ -438,7 +447,8 @@ Secuencia educativa recomendada
         self.tbl_matriz.tag_configure("even", background="#ffffff")
         self.tbl_matriz.tag_configure("odd", background="#f8fbfa")
 
-    def _tab_auditoria(self):
+    def _tab_auditoria(self) -> None:
+        """Construye la vista de eventos de auditoria y permisos DAC vigentes."""
         top = ttk.Frame(self.tab_auditoria, style="Root.TFrame")
         top.pack(fill="x", pady=(0, 10))
 
@@ -486,7 +496,8 @@ Secuencia educativa recomendada
         )
         self.txt_dac.pack(fill="x")
 
-    def _poblar_selectores(self):
+    def _poblar_selectores(self) -> None:
+        """Carga los combobox iniciales con usuarios, recursos y acciones disponibles."""
         usuarios_txt = [f"{u.nombre} [{u.rol.name}]" for u in self.usuarios_ordenados]
         recursos_txt = [f"{r.nombre} ({r.tipo}/{r.clasificacion.name})" for r in self.recursos_ordenados]
         acciones_txt = [a.value for a in self.acciones_ordenadas]
@@ -509,22 +520,27 @@ Secuencia educativa recomendada
         self.cmb_recurso_dac.current(0)
         self.cmb_accion_dac.current(0)
 
-    def _usuario_actual(self):
+    def _usuario_actual(self) -> Usuario:
+        """Retorna el usuario actualmente seleccionado en el laboratorio."""
         return self.usuarios_ordenados[self.cmb_usuario.current()]
 
-    def _recurso_actual(self):
+    def _recurso_actual(self) -> Recurso:
+        """Retorna el recurso actualmente seleccionado en el laboratorio."""
         return self.recursos_ordenados[self.cmb_recurso.current()]
 
-    def _accion_actual(self):
+    def _accion_actual(self) -> Accion:
+        """Retorna la accion seleccionada en el laboratorio."""
         return self.acciones_ordenadas[self.cmb_accion.current()]
 
-    def _set_text(self, widget, text):
+    def _set_text(self, widget: tk.Text, text: str) -> None:
+        """Actualiza un widget de texto en modo seguro (habilitar, escribir, deshabilitar)."""
         widget.configure(state="normal")
         widget.delete("1.0", "end")
         widget.insert("end", text)
         widget.configure(state="disabled")
 
-    def _actualizar_contexto(self):
+    def _actualizar_contexto(self) -> None:
+        """Refresca etiquetas de contexto con datos del usuario y recurso activo."""
         usuario = self._usuario_actual()
         recurso = self._recurso_actual()
         embargo = (
@@ -543,13 +559,15 @@ Secuencia educativa recomendada
             text="Regla base: RBAC valida rol, MAC valida nivel y DAC permite excepciones temporales."
         )
 
-    def _actualizar_badge(self, permitido):
+    def _actualizar_badge(self, permitido: bool) -> None:
+        """Actualiza el indicador visual segun el resultado de la ultima evaluacion."""
         if permitido:
             self.badge_estado.configure(text="Último resultado: PERMITIDO", bg=self.COLORS["ok_bg"], fg=self.COLORS["ok_fg"])
         else:
             self.badge_estado.configure(text="Último resultado: DENEGADO", bg=self.COLORS["no_bg"], fg=self.COLORS["no_fg"])
 
-    def _evaluar(self):
+    def _evaluar(self) -> None:
+        """Ejecuta la evaluacion de acceso y explica la decision para el estudiante."""
         usuario = self._usuario_actual()
         recurso = self._recurso_actual()
         accion = self._accion_actual()
@@ -570,7 +588,6 @@ Secuencia educativa recomendada
                 "Motivo detallado:",
                 registro.motivo,
                 "",
-                "Interpretacion:",
                 "Interpretación:",
                 "1) RBAC decide permisos por rol.",
                 "2) Se evalua contexto de propietario/representacion.",
@@ -583,7 +600,8 @@ Secuencia educativa recomendada
         self._actualizar_auditoria()
         self._actualizar_dac_vigente()
 
-    def _delegar(self):
+    def _delegar(self) -> None:
+        """Crea una delegacion DAC validando entradas y evitando duplicados vigentes."""
         propietario = self.usuarios_ordenados[self.cmb_propietario.current()]
         beneficiario = self.usuarios_ordenados[self.cmb_beneficiario.current()]
         recurso = self.recursos_ordenados[self.cmb_recurso_dac.current()]
@@ -637,7 +655,8 @@ Secuencia educativa recomendada
         )
         self._actualizar_dac_vigente()
 
-    def _actualizar_auditoria(self):
+    def _actualizar_auditoria(self) -> None:
+        """Sincroniza la tabla de auditoria con el log actual del motor."""
         for row in self.tbl_log.get_children():
             self.tbl_log.delete(row)
 
@@ -664,7 +683,8 @@ Secuencia educativa recomendada
             text=f"Intentos: {len(self.motor.log)} | Permitidos: {permitidos} | Denegados: {denegados}"
         )
 
-    def _actualizar_dac_vigente(self):
+    def _actualizar_dac_vigente(self) -> None:
+        """Muestra en texto los permisos DAC activos y su fecha de expiracion."""
         lineas = ["Permisos vigentes:"]
         vigentes = [perm for perm in self.motor.permisos_dac if perm.esta_vigente()]
 
@@ -684,13 +704,15 @@ Secuencia educativa recomendada
 
         self._set_text(self.txt_dac, "\n".join(lineas))
 
-    def _limpiar_auditoria(self):
+    def _limpiar_auditoria(self) -> None:
+        """Limpia el log de auditoria para iniciar nuevas pruebas comparativas."""
         self.motor.log.clear()
         self._actualizar_auditoria()
         self._set_text(self.txt_resultado, "Auditoría reiniciada. Ejecuta nuevas pruebas para comparar resultados.")
         self.badge_estado.configure(text="Sin evaluaciones aun", bg=self.COLORS["panel_soft"], fg=self.COLORS["text"])
 
-    def _demo(self):
+    def _demo(self) -> None:
+        """Ejecuta un conjunto corto de casos predefinidos para poblar la auditoria."""
         casos = [
             ("sofia", "ganancias_sofia", Accion.LEER),
             ("manager_a", "ganancias_carlos", Accion.LEER),
@@ -710,7 +732,8 @@ Secuencia educativa recomendada
         )
 
 
-def lanzar_gui():
+def lanzar_gui() -> None:
+    """Inicia la aplicacion Tkinter de TuneBox."""
     raiz = tk.Tk()
     TuneBoxGUI(raiz)
     raiz.mainloop()

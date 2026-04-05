@@ -65,7 +65,7 @@ class Usuario:
     nombre: str
     rol: Rol
     nivel_autorizacion: ClasificacionMAC
-    artistas_representados: list = field(default_factory=list)
+    artistas_representados: list[str] = field(default_factory=list)
     plataforma_id: Optional[str] = None
 
     def __str__(self) -> str:
@@ -80,11 +80,12 @@ class PermisoDelegado:
     recurso_id: str
     otorgado_por: str
     otorgado_a: str
-    acciones: list
+    acciones: list[Accion]
     expira: datetime
     activo: bool = True
 
     def esta_vigente(self) -> bool:
+        """Indica si la delegación sigue activa y no ha expirado."""
         return self.activo and datetime.now() < self.expira
 
 

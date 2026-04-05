@@ -3,10 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 import uuid
 
-from models import Accion, PermisoDelegado, RegistroAcceso, Rol
+from models import Accion, PermisoDelegado, Recurso, RegistroAcceso, Rol, Usuario
 
 
-RBAC_MATRIZ = {
+RBAC_MATRIZ: dict[Rol, dict[str, set[Accion]]] = {
     Rol.ARTISTA: {
         "cancion": {Accion.LEER, Accion.ESCRIBIR, Accion.COMPARTIR},
         "ganancia": {Accion.LEER},
@@ -69,11 +69,21 @@ RBAC_MATRIZ = {
 class MotorAcceso:
     """Evalua solicitudes de acceso aplicando RBAC, contexto, MAC y DAC."""
 
-    def __init__(self):
-        self.log = []
-        self.permisos_dac = []
+    def __init__(self) -> None:
+        """Inicializa el estado de auditoria y delegaciones DAC activas."""
+        self.log: list[RegistroAcceso] = []
+        self.permisos_dac: list[PermisoDelegado] = []
 
-    def _registrar(self, usuario, recurso, accion, resultado, motivo, modelo):
+    def _registrar(
+        self,
+        usuario: Usuario,
+        recurso: Recurso,
+        accion: Accion,
+        resultado: str,
+        motivo: str,
+        modelo: str,
+    ) -> RegistroAcceso:
+        """Crea una entrada de auditoria y la agrega al log interno."""
         entrada = RegistroAcceso(
             timestamp=datetime.now(),
             usuario_id=usuario.id,
@@ -89,7 +99,8 @@ class MotorAcceso:
         self.log.append(entrada)
         return entrada
 
-    def _verificar_rbac(self, usuario, recurso, accion):
+    def _verificar_rbac(self, usuario: Usuario, recurso: Recurso, accion: Accion) -> tuple[bool, str]:
+        """Valida si el rol tiene permiso para la accion y tipo de recurso."""
         permisos_rol = RBAC_MATRIZ.get(usuario.rol, {})
         acciones_permitidas = permisos_rol.get(recurso.tipo, set())
         if accion in acciones_permitidas:
@@ -99,7 +110,8 @@ class MotorAcceso:
             f"'{accion.value}' sobre '{recurso.tipo}'"
         )
 
-    def _verificar_mac(self, usuario, recurso):
+    def _verificar_mac(self, usuario: Usuario, recurso: Recurso) -> tuple[bool, str]:
+        """Aplica validaciones MAC por nivel de clasificacion y embargo temporal."""
         if usuario.nivel_autorizacion.value < recurso.clasificacion.value:
             return False, (
                 "Nivel MAC insuficiente: usuario tiene "
@@ -117,7 +129,8 @@ class MotorAcceso:
 
         return True, "Nivel MAC autorizado"
 
-    def _verificar_dac(self, usuario, recurso, accion):
+    def _verificar_dac(self, usuario: Usuario, recurso: Recurso, accion: Accion) -> tuple[bool, str]:
+        """Verifica si existe una delegacion DAC vigente para este acceso."""
         for permiso in self.permisos_dac:
             if (
                 permiso.recurso_id == recurso.id
@@ -130,18 +143,21 @@ class MotorAcceso:
         return False, "Sin permiso DAC para este recurso/accion"
 
     @staticmethod
-    def _es_propietario(usuario, recurso):
+    def _es_propietario(usuario: Usuario, recurso: Recurso) -> bool:
+        """Indica si el usuario es el propietario directo del recurso."""
         return usuario.id == recurso.propietario_id
 
     @staticmethod
-    def _manager_representa_artista(usuario, recurso):
+    def _manager_representa_artista(usuario: Usuario, recurso: Recurso) -> bool:
+        """Determina si el manager representa al artista propietario del recurso."""
         return recurso.propietario_id in usuario.artistas_representados
 
     @staticmethod
-    def _api_tiene_acceso(usuario, recurso):
+    def _api_tiene_acceso(usuario: Usuario, recurso: Recurso) -> bool:
+        """Restringe plataformas externas a sus recursos vinculados."""
         return usuario.plataforma_id == recurso.propietario_id
 
-    def evaluar_acceso(self, usuario, recurso, accion):
+    def evaluar_acceso(self, usuario: Usuario, recurso: Recurso, accion: Accion) -> tuple[bool, RegistroAcceso]:
         """Versión silenciosa para GUI y CLI. Retorna (permitido, registro)."""
         rbac_ok, rbac_msg = self._verificar_rbac(usuario, recurso, accion)
         if not rbac_ok:
@@ -208,12 +224,21 @@ class MotorAcceso:
         motivo = f"{rbac_msg} | {mac_msg}"
         return True, self._registrar(usuario, recurso, accion, "PERMITIDO", motivo, modelo)
 
-    def solicitar_acceso(self, usuario, recurso, accion):
+    def solicitar_acceso(self, usuario: Usuario, recurso: Recurso, accion: Accion) -> bool:
+        """Evalua acceso e imprime el registro para escenarios de consola."""
         permitido, entrada = self.evaluar_acceso(usuario, recurso, accion)
         print(entrada)
         return permitido
 
-    def delegar_permiso(self, propietario, recurso, beneficiario, acciones, dias=30):
+    def delegar_permiso(
+        self,
+        propietario: Usuario,
+        recurso: Recurso,
+        beneficiario: Usuario,
+        acciones: list[Accion],
+        dias: int = 30,
+    ) -> PermisoDelegado:
+        """Crea una delegacion DAC y muestra un mensaje explicativo en consola."""
         if propietario.id != recurso.propietario_id:
             raise PermissionError(f"{propietario} no es propietario de '{recurso}'")
 
@@ -233,7 +258,15 @@ class MotorAcceso:
         )
         return permiso
 
-    def delegar_permiso_silencioso(self, propietario, recurso, beneficiario, acciones, dias=30):
+    def delegar_permiso_silencioso(
+        self,
+        propietario: Usuario,
+        recurso: Recurso,
+        beneficiario: Usuario,
+        acciones: list[Accion],
+        dias: int = 30,
+    ) -> PermisoDelegado:
+        """Crea una delegacion DAC sin imprimir, para uso de la GUI."""
         if propietario.id != recurso.propietario_id:
             raise PermissionError(f"{propietario} no es propietario de '{recurso}'")
 
@@ -248,7 +281,8 @@ class MotorAcceso:
         self.permisos_dac.append(permiso)
         return permiso
 
-    def imprimir_log(self):
+    def imprimir_log(self) -> None:
+        """Imprime en consola el resumen y detalle del log de auditoria."""
         print("\n" + "=" * 80)
         print("  REGISTRO COMPLETO DE AUDITORÍA - TUNEBOX")
         print("=" * 80)
@@ -262,7 +296,8 @@ class MotorAcceso:
             print(f"  {entrada}")
         print("=" * 80 + "\n")
 
-    def imprimir_matriz_rbac(self):
+    def imprimir_matriz_rbac(self) -> None:
+        """Muestra en consola la matriz RBAC resumida por rol y tipo de recurso."""
         print("\n" + "=" * 80)
         print("  MATRIZ RBAC - TuneBox  (Rol x Recurso x Acciones)")
         print("=" * 80)
