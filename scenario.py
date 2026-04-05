@@ -6,7 +6,7 @@ from access_control import MotorAcceso
 from models import Accion, ClasificacionMAC, Recurso, Rol, Usuario
 
 
-def construir_escenario():
+def construir_escenario() -> tuple[dict[str, Usuario], dict[str, Recurso], MotorAcceso]:
     """Construye usuarios y recursos del mundo TuneBox."""
     motor = MotorAcceso()
     fecha_embargo = datetime.now() + timedelta(days=10)
@@ -132,10 +132,11 @@ def construir_escenario():
     return usuarios, recursos, motor
 
 
-def ejecutar_simulacion():
+def ejecutar_simulacion() -> None:
     """Ejecuta todos los casos de uso del enunciado."""
 
-    def sep(titulo):
+    def sep(titulo: str) -> None:
+        """Imprime un separador visual para cada caso de prueba."""
         print(f"\n{'=' * 70}\n  CASO: {titulo}\n{'=' * 70}")
 
     usuarios, recursos, motor = construir_escenario()
